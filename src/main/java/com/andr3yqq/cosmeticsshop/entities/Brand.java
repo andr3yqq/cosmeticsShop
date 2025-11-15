@@ -12,11 +12,18 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "roles")
-public class Role {
+@Table(name = "brands")
+public class Brand {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @NotBlank(message = "Name cannot be blank")
+
+    @NotBlank(message = "Brand name cannot be blank")
     private String name;
+
+    private String description;
+
+    @ManyToOne
+    @JoinColumn(name = "logo_id")
+    private Image logo;
 }

@@ -12,11 +12,14 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "roles")
-public class Role {
+@Table(name = "images")
+public class Image {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @NotBlank(message = "Name cannot be blank")
+    @NotBlank(message = "Image URL cannot be blank")
+    private String imageUrl;
     private String name;
+    @NotBlank(message = "Type cannot be blank")
+    private String type;
 }

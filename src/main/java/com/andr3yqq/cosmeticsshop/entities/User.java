@@ -2,6 +2,7 @@ package com.andr3yqq.cosmeticsshop.entities;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -28,6 +29,7 @@ public class User implements UserDetails {
     @Column(unique = true)
     @Email(message = "Email must be valid")
     private String email;
+    @Min(value = 8, message = "Password must be at least 8 characters")
     private String password;
     @ManyToOne
     @JoinColumn(name = "address_id")
