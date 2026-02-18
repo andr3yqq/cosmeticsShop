@@ -23,9 +23,7 @@ public class Shipment {
     @ManyToOne
     @JoinColumn(name = "order_id")
     private Order order;
-    @ManyToOne
-    @JoinColumn(name = "address_id")
-    private Address address;
+    private String address;
     private String trackingNumber;
     @Column(name = "shipping_provider", nullable = false)
     private String shippingProvider;

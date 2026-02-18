@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 public class CartItemDTO {
     private Long id;
     private Long productId;
-    private Long cartId;
     @Positive(message = "Quantity must be greater than zero")
     private Integer quantity;
     @PositiveOrZero(message = "Price must be greater than or equal to zero")

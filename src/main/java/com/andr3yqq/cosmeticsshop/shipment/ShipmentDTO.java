@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 public class ShipmentDTO {
     private Long id;
     private Long orderId;
-    private Long addressId;
+    private String address;
     private String trackingNumber;
     @NotNull(message = "Shipping provider cannot be null")
     private String shippingProvider;
