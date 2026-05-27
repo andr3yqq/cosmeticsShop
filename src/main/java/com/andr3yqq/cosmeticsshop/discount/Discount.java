@@ -30,9 +30,16 @@ public class Discount {
     private Double discountPercentage;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
+    @ManyToMany
     private List<Product> appliedToProducts;
+
+    @ElementCollection(targetClass = ProductCategory.class)
     @Enumerated(EnumType.STRING)
     private List<ProductCategory> appliedToCategories;
+
+    @ManyToMany
     private List<User> appliedToUsers;
+
+    @ManyToMany
     private List<Brand> appliedToBrands;
 }

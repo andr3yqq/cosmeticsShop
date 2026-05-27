@@ -1,7 +1,8 @@
 ### Cosmetics shop Backend
 
 Technologies:
-- Java 25
+- Java 26
 - Spring Boot 4
 - Spring Data JPA
 - PostgreSQL
+- Okta Auth0

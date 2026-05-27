@@ -9,12 +9,12 @@ import java.util.List;
 @Service
 public class UserServiceImpl implements UserService {
 
-    private UserRepository userRepository;
-    private RoleRepository roleRepository;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
 
     @Override
     public User createUser(UserDTO userDTO) {
-        if (userRepository.getUserByEmail(userDTO.getEmail()) != null) {
+        if (userRepository.getUserByEmail(userDTO.getEmail()).isEmpty()) {
             User user = new User(userDTO.getEmail(), userDTO.getPassword(), userDTO.getFirstName(), userDTO.getLastName());
             return userRepository.save(user);
         }
@@ -28,7 +28,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User updateUser(UserDTO userDTO) {
-        User user = userRepository.getUserByid(userDTO.getId());
+        User user = userRepository.findById(userDTO.getId()).orElse(null);
         if (user != null) {
             user.setEmail(userDTO.getEmail());
             user.setFirstName(userDTO.getFirstName());
@@ -41,7 +41,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getUserById(Long userId) {
-        return userRepository.getUserByid(userId);
+        return userRepository.findById(userId).orElse(null);
     }
 
     @Override

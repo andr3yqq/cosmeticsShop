@@ -10,5 +10,7 @@ public interface ProductService {
     List<Product> getAllProducts();
     Product getProductById(Long id);
     Product getProductBySku(String sku);
-    List<Product> getProductsByBrand(BrandDTO brandDTO);
+    List<Product> getProductsByBrand(String brand);
+    List<Product> getProductsByCategory(String category);
+    List<Product> getProductsByName(String name);
 }

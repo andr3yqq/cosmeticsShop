@@ -2,8 +2,8 @@ package com.andr3yqq.cosmeticsshop.user;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface UserRepository extends JpaRepository<User, Long> {
-    User getUserByEmail(String email);
+import java.util.Optional;
 
-    User getUserByid(Long id);
+public interface UserRepository extends JpaRepository<User, Long> {
+    Optional<User> getUserByEmail(String email);
 }

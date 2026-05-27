@@ -56,7 +56,20 @@ public class Product {
     @OneToMany(mappedBy = "product")
     private List<Image> images;
 
+    @ElementCollection
     private List<String> features;
+
+    public Product(String sku, String brand, String name, String description, Double price, Long availableStock, ProductStatus status, ProductCategory category) {
+        this.sku = sku;
+        this.brand = brand;
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.lastPrice = price;
+        this.availableStock = availableStock;
+        this.status = status;
+        this.category = category;
+    }
 
     @PrePersist
     public void prePersist() {

@@ -21,4 +21,5 @@ public class UserResponseDTO {
     private String phoneNumber;
     private String role;
     private boolean isActive;
+    private String message;
 }
