@@ -11,7 +11,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductController {
 
-    private final ProductServiceImpl productService;
+    private final ProductService productService;
     private final ProductMapper productMapper;
 
     @PostMapping("/create")

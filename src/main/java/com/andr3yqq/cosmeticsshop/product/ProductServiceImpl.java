@@ -13,12 +13,12 @@ import java.util.List;
 @Service
 public class ProductServiceImpl implements ProductService {
 
-    private ProductRepository productRepository;
+    private final ProductRepository productRepository;
 
     @Override
     @Transactional
     public Product createProduct(ProductDTO productDTO) {
-        if (getProductBySku(productDTO.getSku()) != null) {
+        if (getProductBySku(productDTO.getSku()) == null) {
             Product product = new Product(
                     productDTO.getSku(),
                     productDTO.getBrand(),
@@ -29,6 +29,19 @@ public class ProductServiceImpl implements ProductService {
                     ProductStatus.valueOf(productDTO.getStatus()),
                     ProductCategory.valueOf(productDTO.getCategory())
             );
+            
+            product.setFeatures(productDTO.getFeatures());
+            
+            if (productDTO.getImages() != null) {
+                List<Image> images = new ArrayList<>();
+                for (ImageDTO imageDTO : productDTO.getImages()) {
+                    Image image = new Image(imageDTO.getId(), imageDTO.getImageUrl(), imageDTO.getName(), imageDTO.getType());
+                    image.setProduct(product);
+                    images.add(image);
+                }
+                product.setImages(images);
+            }
+            
             return productRepository.save(product);
         }
         return null;
@@ -48,13 +61,19 @@ public class ProductServiceImpl implements ProductService {
             product.setAvailableStock(productDTO.getAvailableStock());
             product.setCategory(ProductCategory.valueOf(productDTO.getCategory()));
             product.setStatus(ProductStatus.valueOf(productDTO.getStatus()));
-            List<Image> images = new ArrayList<>();
-            for (ImageDTO imageDTO : productDTO.getImages())
-            {
-                Image image = new Image(imageDTO.getId(), imageDTO.getImageUrl(), imageDTO.getName(), imageDTO.getType());
-                images.add(image);
+            
+            if (productDTO.getImages() != null) {
+                List<Image> images = new ArrayList<>();
+                for (ImageDTO imageDTO : productDTO.getImages()) {
+                    Image image = new Image(imageDTO.getId(), imageDTO.getImageUrl(), imageDTO.getName(), imageDTO.getType());
+                    image.setProduct(product);
+                    images.add(image);
+                }
+                product.setImages(images);
+            } else {
+                product.setImages(null);
             }
-            product.setImages(images);
+            
             product.setFeatures(productDTO.getFeatures());
             return productRepository.save(product);
         }
