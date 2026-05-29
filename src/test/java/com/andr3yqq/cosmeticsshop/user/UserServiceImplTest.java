@@ -8,6 +8,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
@@ -143,9 +147,24 @@ class UserServiceImplTest {
     }
 
     @Test
+    void createUser_ForcesUserRole_EvenIfAdminRequested() {
+        userDTO.setRole("ROLE_ADMIN");
+        when(userRepository.getUserByEmail(userDTO.getEmail())).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(userDTO.getPassword())).thenReturn("encodedPassword");
+        when(roleRepository.getRoleByName("ROLE_USER")).thenReturn(role);
+        when(addressRepository.findById(2L)).thenReturn(Optional.of(address));
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        User createdUser = userService.createUser(userDTO);
+
+        assertNotNull(createdUser);
+        verify(roleRepository, times(1)).getRoleByName("ROLE_USER");
+        verify(roleRepository, never()).getRoleByName("ROLE_ADMIN");
+    }
+
+    @Test
     void updateUser_Success() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(roleRepository.getRoleByName("ROLE_USER")).thenReturn(role);
         when(addressRepository.findById(2L)).thenReturn(Optional.of(address));
         when(userRepository.save(any(User.class))).thenReturn(user);
 
@@ -153,6 +172,35 @@ class UserServiceImplTest {
 
         assertNotNull(updatedUser);
         verify(userRepository, times(1)).save(any(User.class));
+    }
+
+    @Test
+    void updateUser_Admin_Success_WithRoleUpdate() {
+        // Mock authentication context for ADMIN user
+        Authentication authentication = mock(Authentication.class);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        doReturn(List.of(new SimpleGrantedAuthority("ROLE_ADMIN")))
+                .when(authentication).getAuthorities();
+        SecurityContextHolder.setContext(securityContext);
+
+        try {
+            Role adminRole = new Role(2L, "ROLE_ADMIN", LocalDateTime.now(), LocalDateTime.now());
+            userDTO.setRole("ROLE_ADMIN");
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(roleRepository.getRoleByName("ROLE_ADMIN")).thenReturn(adminRole);
+            when(addressRepository.findById(2L)).thenReturn(Optional.of(address));
+            when(userRepository.save(any(User.class))).thenReturn(user);
+
+            User updatedUser = userService.updateUser(userDTO);
+
+            assertNotNull(updatedUser);
+            verify(roleRepository, times(1)).getRoleByName("ROLE_ADMIN");
+            verify(userRepository, times(1)).save(any(User.class));
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 
     @Test
@@ -210,7 +258,7 @@ class UserServiceImplTest {
         List<User> users = userService.getAllUsers();
 
         assertEquals(1, users.size());
-        assertEquals("test@example.com", users.get(0).getEmail());
+        assertEquals("test@example.com", users.getFirst().getEmail());
     }
 
     @Test

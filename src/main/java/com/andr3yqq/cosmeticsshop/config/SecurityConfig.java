@@ -17,12 +17,22 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import org.springframework.http.HttpMethod;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 import org.springframework.context.annotation.Profile;
+
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.jwt.Jwt;
+import java.util.Collection;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @Profile("!test")
 public class SecurityConfig {
 
@@ -33,10 +43,68 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/products/create").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/products/update").hasRole("ADMIN")
                         .requestMatchers("/api/users/register", "/api/users/login", "/api/users/reset-password").permitAll()
                         .anyRequest().authenticated())
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(withDefaults()));
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+                );
         return http.build();
+    }
+
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtGrantedAuthoritiesConverter defaultGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        defaultGrantedAuthoritiesConverter.setAuthorityPrefix("SCOPE_");
+
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            Collection<GrantedAuthority> authorities = new ArrayList<>(defaultGrantedAuthoritiesConverter.convert(jwt));
+
+            List<String> roles = getRolesFromClaims(jwt);
+            if (roles != null) {
+                for (String role : roles) {
+                    String formattedRole = role.toUpperCase();
+                    if (!formattedRole.startsWith("ROLE_")) {
+                        formattedRole = "ROLE_" + formattedRole;
+                    }
+                    authorities.add(new SimpleGrantedAuthority(formattedRole));
+                }
+            }
+
+            return authorities;
+        });
+
+        return converter;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> getRolesFromClaims(Jwt jwt) {
+        Object rolesClaim = jwt.getClaim("roles");
+        if (rolesClaim instanceof List) {
+            return (List<String>) rolesClaim;
+        } else if (rolesClaim instanceof String) {
+            return List.of((String) rolesClaim);
+        }
+
+        for (String claimName : jwt.getClaims().keySet()) {
+            if (claimName.endsWith("/roles")) {
+                Object customRoles = jwt.getClaim(claimName);
+                if (customRoles instanceof List) {
+                    return (List<String>) customRoles;
+                } else if (customRoles instanceof String) {
+                    return List.of((String) customRoles);
+                }
+            }
+        }
+
+        Object permissionsClaim = jwt.getClaim("permissions");
+        if (permissionsClaim instanceof List) {
+            return (List<String>) permissionsClaim;
+        }
+
+        return Collections.emptyList();
     }
 
     @Bean

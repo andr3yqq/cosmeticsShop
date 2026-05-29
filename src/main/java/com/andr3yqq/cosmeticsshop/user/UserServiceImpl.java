@@ -2,8 +2,10 @@ package com.andr3yqq.cosmeticsshop.user;
 
 import com.andr3yqq.cosmeticsshop.address.AddressRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
@@ -23,8 +25,8 @@ public class UserServiceImpl implements UserService {
             user.setPhoneNumber(userDTO.getPhoneNumber());
             user.setActive(true);
 
-            // Set Role
-            String roleName = userDTO.getRole() != null ? userDTO.getRole() : "ROLE_USER";
+            // Set Role: Always force ROLE_USER for public registrations to prevent privilege escalation
+            String roleName = "ROLE_USER";
             Role role = roleRepository.getRoleByName(roleName);
             if (role == null) {
                 role = new Role();
@@ -62,7 +64,13 @@ public class UserServiceImpl implements UserService {
             user.setPhoneNumber(userDTO.getPhoneNumber());
             user.setActive(userDTO.isActive());
 
-            if (userDTO.getRole() != null) {
+            // Only allow role updates if the active requester has ROLE_ADMIN authority
+            Authentication authentication =
+                    SecurityContextHolder.getContext().getAuthentication();
+            boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+            if (userDTO.getRole() != null && isAdmin) {
                 Role role = roleRepository.getRoleByName(userDTO.getRole());
                 if (role == null) {
                     role = new Role();

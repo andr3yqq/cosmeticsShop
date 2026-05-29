@@ -1,5 +1,9 @@
 package com.andr3yqq.cosmeticsshop.user;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -69,6 +74,20 @@ class UserControllerTest {
         user.setPhoneNumber("123456789");
         user.setRole(role);
         user.setActive(true);
+
+        // Stub getUserById for default BOLA security context checks in tests
+        when(userService.getUserById(1L)).thenReturn(user);
+
+        // Mock security context for a standard ROLE_USER named test@example.com
+        Authentication authentication =
+                mock(Authentication.class);
+        SecurityContext securityContext =
+                mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getName()).thenReturn("test@example.com");
+        doReturn(List.of(new SimpleGrantedAuthority("ROLE_USER")))
+                .when(authentication).getAuthorities();
+        SecurityContextHolder.setContext(securityContext);
     }
 
     @Test
@@ -91,7 +110,7 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(userDTO)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("already exists")));
+                .andExpect(jsonPath("$.message").value(containsString("already exists")));
     }
 
     @Test
@@ -102,7 +121,7 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(userDTO)))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Database down")));
+                .andExpect(jsonPath("$.message").value(containsString("Database down")));
     }
 
     @Test
@@ -125,7 +144,7 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginDTO)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Invalid email or password")));
+                .andExpect(jsonPath("$.message").value(containsString("Invalid email or password")));
     }
 
     @Test
@@ -147,7 +166,7 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(userDTO)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("User not found")));
+                .andExpect(jsonPath("$.message").value(containsString("User not found")));
     }
 
     @Test
@@ -183,16 +202,29 @@ class UserControllerTest {
 
         mockMvc.perform(get("/api/users/email/test@example.com"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("User not found")));
+                .andExpect(jsonPath("$.message").value(containsString("User not found")));
     }
 
     @Test
     void getAllUsers_Success() throws Exception {
-        when(userService.getAllUsers()).thenReturn(List.of(user));
+        Authentication authentication =
+                mock(Authentication.class);
+        SecurityContext securityContext =
+                mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        doReturn(List.of(new SimpleGrantedAuthority("ROLE_ADMIN")))
+                .when(authentication).getAuthorities();
+        SecurityContextHolder.setContext(securityContext);
 
-        mockMvc.perform(get("/api/users"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].email").value("test@example.com"));
+        try {
+            when(userService.getAllUsers()).thenReturn(List.of(user));
+
+            mockMvc.perform(get("/api/users"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].email").value("test@example.com"));
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 
     @Test
@@ -215,7 +247,7 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginDTO)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("User not found")));
+                .andExpect(jsonPath("$.message").value(containsString("User not found")));
     }
 
     @Test
