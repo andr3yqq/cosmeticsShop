@@ -3,6 +3,7 @@ package com.andr3yqq.cosmeticsshop.user;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,38 +18,26 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostMapping("/register")
-    public ResponseEntity<UserResponseDTO> createUser(@RequestBody UserDTO userDto) {
+    @GetMapping("/me")
+    public ResponseEntity<UserResponseDTO> getMe() {
         try {
-            User user = userService.createUser(userDto);
-            if (user == null) {
-                UserResponseDTO errorResponse = new UserResponseDTO();
-                errorResponse.setMessage("Registration failed: User with email " + userDto.getEmail() + " already exists.");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
-            UserResponseDTO userResponseDTO = mapToResponseDTO(user, "Registration successful");
-            return ResponseEntity.status(HttpStatus.CREATED).body(userResponseDTO);
-        } catch (Exception e) {
-            UserResponseDTO errorResponse = new UserResponseDTO();
-            errorResponse.setMessage("Error during registration: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
-    }
 
-    @PostMapping("/login")
-    public ResponseEntity<UserResponseDTO> login(@RequestBody UserLoginDTO userLoginDTO) {
-        try {
-            User user = userService.loginUser(userLoginDTO);
-            if (user == null) {
-                UserResponseDTO errorResponse = new UserResponseDTO();
-                errorResponse.setMessage("Login failed: Invalid email or password.");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+            Object principal = authentication.getPrincipal();
+            if (!(principal instanceof Jwt)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
-            UserResponseDTO userResponseDTO = mapToResponseDTO(user, "Login successful");
+
+            Jwt jwt = (Jwt) principal;
+            User user = userService.getOrCreateUserFromJwt(jwt);
+            UserResponseDTO userResponseDTO = mapToResponseDTO(user, "User profile retrieved successfully");
             return ResponseEntity.ok(userResponseDTO);
         } catch (Exception e) {
             UserResponseDTO errorResponse = new UserResponseDTO();
-            errorResponse.setMessage("Error during login: " + e.getMessage());
+            errorResponse.setMessage("Error retrieving active profile: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
@@ -138,28 +127,7 @@ public class UserController {
         }
     }
 
-    @PostMapping("/reset-password")
-    public ResponseEntity<UserResponseDTO> resetPassword(@RequestBody UserLoginDTO userLoginDTO) {
-        try {
-            User user = userService.getUserByEmail(userLoginDTO.getEmail());
-            if (user == null) {
-                UserResponseDTO errorResponse = new UserResponseDTO();
-                errorResponse.setMessage("Reset password failed: User not found.");
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
-            }
-            // WARNING: In production environments with Auth0, local password resets should
-            // be deactivated, and users should use Auth0's native password reset flows.
-            userService.resetPassword(userLoginDTO);
-            UserResponseDTO responseDTO = new UserResponseDTO();
-            responseDTO.setEmail(userLoginDTO.getEmail());
-            responseDTO.setMessage("Password reset successful.");
-            return ResponseEntity.ok(responseDTO);
-        } catch (Exception e) {
-            UserResponseDTO errorResponse = new UserResponseDTO();
-            errorResponse.setMessage("Error resetting password: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
-    }
+
 
     @GetMapping("/{id}/role")
     public ResponseEntity<RoleDTO> getUserRole(@PathVariable Long id) {
@@ -240,6 +208,18 @@ public class UserController {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
         if (isAdmin) return true;
 
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Jwt) {
+            try {
+                User activeUser = userService.getOrCreateUserFromJwt((Jwt) principal);
+                if (activeUser != null && activeUser.getId().equals(user.getId())) {
+                    return true;
+                }
+            } catch (Exception e) {
+                // Fall back
+            }
+        }
+
         String currentEmail = authentication.getName();
         return currentEmail != null && currentEmail.equalsIgnoreCase(user.getEmail());
     }
@@ -252,6 +232,18 @@ public class UserController {
         boolean isAdmin = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
         if (isAdmin) return true;
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Jwt) {
+            try {
+                User activeUser = userService.getOrCreateUserFromJwt((Jwt) principal);
+                if (activeUser != null && activeUser.getEmail().equalsIgnoreCase(email)) {
+                    return true;
+                }
+            } catch (Exception e) {
+                // Fall back
+            }
+        }
 
         String currentEmail = authentication.getName();
         return currentEmail != null && currentEmail.equalsIgnoreCase(email);

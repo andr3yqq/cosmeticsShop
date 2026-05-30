@@ -4,6 +4,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +49,6 @@ class UserControllerTest {
     private ObjectMapper objectMapper;
 
     private UserDTO userDTO;
-    private UserLoginDTO loginDTO;
     private User user;
     private Role role;
 
@@ -67,8 +67,6 @@ class UserControllerTest {
         userDTO.setAddressId(null);
         userDTO.setActive(true);
 
-        loginDTO = new UserLoginDTO("test@example.com", "password123");
-
         user = new User("test@example.com", "encodedPassword", "John", "Doe");
         user.setId(1L);
         user.setPhoneNumber("123456789");
@@ -83,68 +81,23 @@ class UserControllerTest {
                 mock(Authentication.class);
         SecurityContext securityContext =
                 mock(SecurityContext.class);
+        Jwt jwtMock = mock(Jwt.class);
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.getName()).thenReturn("test@example.com");
+        when(authentication.getPrincipal()).thenReturn(jwtMock);
         doReturn(List.of(new SimpleGrantedAuthority("ROLE_USER")))
                 .when(authentication).getAuthorities();
         SecurityContextHolder.setContext(securityContext);
     }
 
     @Test
-    void register_Success() throws Exception {
-        when(userService.createUser(any(UserDTO.class))).thenReturn(user);
+    void getMe_Success() throws Exception {
+        when(userService.getOrCreateUserFromJwt(any())).thenReturn(user);
 
-        mockMvc.perform(post("/api/users/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(userDTO)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.email").value("test@example.com"))
-                .andExpect(jsonPath("$.message").value("Registration successful"));
-    }
-
-    @Test
-    void register_AlreadyExists() throws Exception {
-        when(userService.createUser(any(UserDTO.class))).thenReturn(null);
-
-        mockMvc.perform(post("/api/users/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(userDTO)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(containsString("already exists")));
-    }
-
-    @Test
-    void register_Exception() throws Exception {
-        when(userService.createUser(any(UserDTO.class))).thenThrow(new RuntimeException("Database down"));
-
-        mockMvc.perform(post("/api/users/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(userDTO)))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message").value(containsString("Database down")));
-    }
-
-    @Test
-    void login_Success() throws Exception {
-        when(userService.loginUser(any(UserLoginDTO.class))).thenReturn(user);
-
-        mockMvc.perform(post("/api/users/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginDTO)))
+        mockMvc.perform(get("/api/users/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("test@example.com"))
-                .andExpect(jsonPath("$.message").value("Login successful"));
-    }
-
-    @Test
-    void login_Failure_InvalidCredentials() throws Exception {
-        when(userService.loginUser(any(UserLoginDTO.class))).thenReturn(null);
-
-        mockMvc.perform(post("/api/users/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginDTO)))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value(containsString("Invalid email or password")));
+                .andExpect(jsonPath("$.message").value("User profile retrieved successfully"));
     }
 
     @Test
@@ -227,28 +180,7 @@ class UserControllerTest {
         }
     }
 
-    @Test
-    void resetPassword_Success() throws Exception {
-        when(userService.getUserByEmail("test@example.com")).thenReturn(user);
-        doNothing().when(userService).resetPassword(any(UserLoginDTO.class));
 
-        mockMvc.perform(post("/api/users/reset-password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginDTO)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Password reset successful."));
-    }
-
-    @Test
-    void resetPassword_NotFound() throws Exception {
-        when(userService.getUserByEmail("test@example.com")).thenReturn(null);
-
-        mockMvc.perform(post("/api/users/reset-password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginDTO)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value(containsString("User not found")));
-    }
 
     @Test
     void getUserRole_Success() throws Exception {

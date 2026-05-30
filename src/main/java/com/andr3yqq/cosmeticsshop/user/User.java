@@ -36,7 +36,8 @@ public class User implements UserDetails {
     @Column(name="last_name", nullable = false)
     private String lastName;
     private String phoneNumber;
-    @OneToOne
+    @ManyToOne
+    @JoinColumn(name = "role_id")
     private Role role;
     private boolean isActive;
     private LocalDateTime createdAt;

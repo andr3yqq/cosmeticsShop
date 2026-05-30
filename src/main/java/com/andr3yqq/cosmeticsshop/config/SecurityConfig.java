@@ -45,7 +45,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/products/create").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/products/update").hasRole("ADMIN")
-                        .requestMatchers("/api/users/register", "/api/users/login", "/api/users/reset-password").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
@@ -89,12 +88,14 @@ public class SecurityConfig {
         }
 
         for (String claimName : jwt.getClaims().keySet()) {
-            if (claimName.endsWith("/roles")) {
-                Object customRoles = jwt.getClaim(claimName);
-                if (customRoles instanceof List) {
-                    return (List<String>) customRoles;
-                } else if (customRoles instanceof String) {
-                    return List.of((String) customRoles);
+            if (claimName.startsWith("http://") || claimName.startsWith("https://")) {
+                if (claimName.endsWith("/roles") || claimName.endsWith("roles")) {
+                    Object customRoles = jwt.getClaim(claimName);
+                    if (customRoles instanceof List) {
+                        return (List<String>) customRoles;
+                    } else if (customRoles instanceof String) {
+                        return List.of((String) customRoles);
+                    }
                 }
             }
         }

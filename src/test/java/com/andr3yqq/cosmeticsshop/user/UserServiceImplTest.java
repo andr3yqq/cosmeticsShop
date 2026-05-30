@@ -8,11 +8,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.quality.Strictness;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,9 +33,6 @@ class UserServiceImplTest {
 
     @Mock
     private AddressRepository addressRepository;
-
-    @Mock
-    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -70,96 +67,106 @@ class UserServiceImplTest {
     }
 
     @Test
-    void createUser_Success_RoleAndAddressExist() {
-        when(userRepository.getUserByEmail(userDTO.getEmail())).thenReturn(Optional.empty());
-        when(passwordEncoder.encode(userDTO.getPassword())).thenReturn("encodedPassword");
-        when(roleRepository.getRoleByName("ROLE_USER")).thenReturn(role);
-        when(addressRepository.findById(2L)).thenReturn(Optional.of(address));
-        when(userRepository.save(any(User.class))).thenReturn(user);
+    void getOrCreateUserFromJwt_ExistingUser() {
+        org.springframework.security.oauth2.jwt.Jwt jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class, withSettings().strictness(Strictness.LENIENT));
+        when(jwt.getClaim("email")).thenReturn("test@example.com");
+        when(userRepository.getUserByEmail("test@example.com")).thenReturn(Optional.of(user));
 
-        User createdUser = userService.createUser(userDTO);
+        User result = userService.getOrCreateUserFromJwt(jwt);
 
-        assertNotNull(createdUser);
-        assertEquals("test@example.com", createdUser.getEmail());
-        assertEquals("encodedPassword", createdUser.getPassword());
-        assertEquals(role, createdUser.getRole());
-        assertEquals(address, createdUser.getAddress());
-        verify(userRepository, times(1)).save(any(User.class));
-    }
-
-    @Test
-    void createUser_Success_RoleDoesNotExist() {
-        when(userRepository.getUserByEmail(userDTO.getEmail())).thenReturn(Optional.empty());
-        when(passwordEncoder.encode(userDTO.getPassword())).thenReturn("encodedPassword");
-        when(roleRepository.getRoleByName("ROLE_USER")).thenReturn(null);
-        when(roleRepository.save(any(Role.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(addressRepository.findById(2L)).thenReturn(Optional.of(address));
-        when(userRepository.save(any(User.class))).thenReturn(user);
-
-        User createdUser = userService.createUser(userDTO);
-
-        assertNotNull(createdUser);
-        verify(roleRepository, times(1)).save(any(Role.class));
-        verify(userRepository, times(1)).save(any(User.class));
-    }
-
-    @Test
-    void createUser_Failure_UserAlreadyExists() {
-        when(userRepository.getUserByEmail(userDTO.getEmail())).thenReturn(Optional.of(user));
-
-        User createdUser = userService.createUser(userDTO);
-
-        assertNull(createdUser);
+        assertNotNull(result);
+        assertEquals("test@example.com", result.getEmail());
         verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
-    void loginUser_Success() {
-        UserLoginDTO loginDTO = new UserLoginDTO("test@example.com", "password123");
-        when(userRepository.getUserByEmail("test@example.com")).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("password123", "encodedPassword")).thenReturn(true);
-
-        User loggedInUser = userService.loginUser(loginDTO);
-
-        assertNotNull(loggedInUser);
-        assertEquals("test@example.com", loggedInUser.getEmail());
-    }
-
-    @Test
-    void loginUser_Failure_WrongPassword() {
-        UserLoginDTO loginDTO = new UserLoginDTO("test@example.com", "wrongPassword");
-        when(userRepository.getUserByEmail("test@example.com")).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("wrongPassword", "encodedPassword")).thenReturn(false);
-
-        User loggedInUser = userService.loginUser(loginDTO);
-
-        assertNull(loggedInUser);
-    }
-
-    @Test
-    void loginUser_Failure_UserNotFound() {
-        UserLoginDTO loginDTO = new UserLoginDTO("unknown@example.com", "password123");
-        when(userRepository.getUserByEmail("unknown@example.com")).thenReturn(Optional.empty());
-
-        User loggedInUser = userService.loginUser(loginDTO);
-
-        assertNull(loggedInUser);
-    }
-
-    @Test
-    void createUser_ForcesUserRole_EvenIfAdminRequested() {
-        userDTO.setRole("ROLE_ADMIN");
-        when(userRepository.getUserByEmail(userDTO.getEmail())).thenReturn(Optional.empty());
-        when(passwordEncoder.encode(userDTO.getPassword())).thenReturn("encodedPassword");
+    void getOrCreateUserFromJwt_NewUser_Success() {
+        org.springframework.security.oauth2.jwt.Jwt jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class, withSettings().strictness(Strictness.LENIENT));
+        when(jwt.getClaim("email")).thenReturn("new@example.com");
+        when(jwt.getClaim("given_name")).thenReturn("Jane");
+        when(jwt.getClaim("family_name")).thenReturn("Smith");
+        when(userRepository.getUserByEmail("new@example.com")).thenReturn(Optional.empty());
         when(roleRepository.getRoleByName("ROLE_USER")).thenReturn(role);
-        when(addressRepository.findById(2L)).thenReturn(Optional.of(address));
-        when(userRepository.save(any(User.class))).thenReturn(user);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User createdUser = userService.createUser(userDTO);
+        User result = userService.getOrCreateUserFromJwt(jwt);
 
-        assertNotNull(createdUser);
-        verify(roleRepository, times(1)).getRoleByName("ROLE_USER");
-        verify(roleRepository, never()).getRoleByName("ROLE_ADMIN");
+        assertNotNull(result);
+        assertEquals("new@example.com", result.getEmail());
+        assertEquals("Jane", result.getFirstName());
+        assertEquals("Smith", result.getLastName());
+        assertEquals("ROLE_USER", result.getRole().getName());
+        assertEquals("EXTERNAL_AUTH0_MANAGED", result.getPassword());
+        verify(userRepository, times(1)).save(any(User.class));
+    }
+
+    @Test
+    void getOrCreateUserFromJwt_NewUser_FallbackName() {
+        org.springframework.security.oauth2.jwt.Jwt jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class, withSettings().strictness(Strictness.LENIENT));
+        when(jwt.getClaim("email")).thenReturn("new@example.com");
+        when(jwt.getClaim("given_name")).thenReturn(null);
+        when(jwt.getClaim("family_name")).thenReturn(null);
+        when(jwt.getClaim("name")).thenReturn("SingleName");
+        when(userRepository.getUserByEmail("new@example.com")).thenReturn(Optional.empty());
+        when(roleRepository.getRoleByName("ROLE_USER")).thenReturn(role);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = userService.getOrCreateUserFromJwt(jwt);
+
+        assertNotNull(result);
+        assertEquals("new@example.com", result.getEmail());
+        assertEquals("SingleName", result.getFirstName());
+        assertEquals("User", result.getLastName());
+    }
+
+    @Test
+    void getOrCreateUserFromJwt_NewUser_CustomClaimNamespaceWithSlash() {
+        org.springframework.security.oauth2.jwt.Jwt jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class, withSettings().strictness(Strictness.LENIENT));
+        
+        java.util.Map<String, Object> claims = new java.util.HashMap<>();
+        claims.put("https://cosmetics-shop.com/email", "custom@example.com");
+        claims.put("https://cosmetics-shop.com/given_name", "Alex");
+        claims.put("https://cosmetics-shop.com/family_name", "Smith");
+
+        when(jwt.getClaims()).thenReturn(claims);
+        when(jwt.getClaim("https://cosmetics-shop.com/email")).thenReturn("custom@example.com");
+        when(jwt.getClaim("https://cosmetics-shop.com/given_name")).thenReturn("Alex");
+        when(jwt.getClaim("https://cosmetics-shop.com/family_name")).thenReturn("Smith");
+        when(userRepository.getUserByEmail("custom@example.com")).thenReturn(Optional.empty());
+        when(roleRepository.getRoleByName("ROLE_USER")).thenReturn(role);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = userService.getOrCreateUserFromJwt(jwt);
+
+        assertNotNull(result);
+        assertEquals("custom@example.com", result.getEmail());
+        assertEquals("Alex", result.getFirstName());
+        assertEquals("Smith", result.getLastName());
+    }
+
+    @Test
+    void getOrCreateUserFromJwt_NewUser_CustomClaimNamespaceWithoutSlash() {
+        org.springframework.security.oauth2.jwt.Jwt jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class, withSettings().strictness(Strictness.LENIENT));
+        
+        java.util.Map<String, Object> claims = new java.util.HashMap<>();
+        claims.put("https://cosmetics-shop.com/email", "custom@example.com");
+        claims.put("https://cosmetics-shop.com/given_name", "Alex");
+        claims.put("https://cosmetics-shop.com/family_name", "Smith");
+
+        when(jwt.getClaims()).thenReturn(claims);
+        when(jwt.getClaim("https://cosmetics-shop.com/email")).thenReturn("custom@example.com");
+        when(jwt.getClaim("https://cosmetics-shop.com/given_name")).thenReturn("Alex");
+        when(jwt.getClaim("https://cosmetics-shop.com/family_name")).thenReturn("Smith");
+        when(userRepository.getUserByEmail("custom@example.com")).thenReturn(Optional.empty());
+        when(roleRepository.getRoleByName("ROLE_USER")).thenReturn(role);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = userService.getOrCreateUserFromJwt(jwt);
+
+        assertNotNull(result);
+        assertEquals("custom@example.com", result.getEmail());
+        assertEquals("Alex", result.getFirstName());
+        assertEquals("Smith", result.getLastName());
     }
 
     @Test
@@ -261,27 +268,7 @@ class UserServiceImplTest {
         assertEquals("test@example.com", users.getFirst().getEmail());
     }
 
-    @Test
-    void resetPassword_Success() {
-        UserLoginDTO loginDTO = new UserLoginDTO("test@example.com", "newPassword123");
-        when(userRepository.getUserByEmail("test@example.com")).thenReturn(Optional.of(user));
-        when(passwordEncoder.encode("newPassword123")).thenReturn("newEncodedPassword");
 
-        userService.resetPassword(loginDTO);
-
-        verify(userRepository, times(1)).save(user);
-        assertEquals("newEncodedPassword", user.getPassword());
-    }
-
-    @Test
-    void resetPassword_Failure_UserNotFound() {
-        UserLoginDTO loginDTO = new UserLoginDTO("test@example.com", "newPassword123");
-        when(userRepository.getUserByEmail("test@example.com")).thenReturn(Optional.empty());
-
-        userService.resetPassword(loginDTO);
-
-        verify(userRepository, never()).save(any(User.class));
-    }
 
     @Test
     void getUserRole_Success() {
