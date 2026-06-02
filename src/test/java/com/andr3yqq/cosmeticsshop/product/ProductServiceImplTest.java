@@ -1,5 +1,7 @@
 package com.andr3yqq.cosmeticsshop.product;
 
+import com.andr3yqq.cosmeticsshop.brand.Brand;
+import com.andr3yqq.cosmeticsshop.brand.BrandRepository;
 import com.andr3yqq.cosmeticsshop.image.Image;
 import com.andr3yqq.cosmeticsshop.image.ImageDTO;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +24,9 @@ class ProductServiceImplTest {
 
     @Mock
     private ProductRepository productRepository;
+
+    @Mock
+    private BrandRepository brandRepository;
 
     @InjectMocks
     private ProductServiceImpl productService;
@@ -63,11 +68,12 @@ class ProductServiceImplTest {
         
         Image image = new Image(1L, "http://example.com/image.jpg", "main", "jpg");
         image.setProduct(product);
-        product.setImages(List.of(image));
+        product.setImages(new ArrayList<>(List.of(image)));
     }
 
     @Test
     void createProduct_Success() {
+        when(brandRepository.findByName("Loreal")).thenReturn(Optional.of(new Brand()));
         when(productRepository.findBySku("SKU-123")).thenReturn(null);
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> {
             Product p = invocation.getArgument(0);
@@ -84,7 +90,7 @@ class ProductServiceImplTest {
         assertEquals(ProductCategory.SKINCARE, createdProduct.getCategory());
         assertEquals(2, createdProduct.getFeatures().size());
         assertEquals(1, createdProduct.getImages().size());
-        assertEquals(createdProduct, createdProduct.getImages().get(0).getProduct());
+        assertEquals(createdProduct, createdProduct.getImages().getFirst().getProduct());
 
         verify(productRepository, times(1)).findBySku("SKU-123");
         verify(productRepository, times(1)).save(any(Product.class));
@@ -92,6 +98,7 @@ class ProductServiceImplTest {
 
     @Test
     void createProduct_Failure_DuplicateSku() {
+        when(brandRepository.findByName("Loreal")).thenReturn(Optional.of(new Brand()));
         when(productRepository.findBySku("SKU-123")).thenReturn(product);
 
         Product createdProduct = productService.createProduct(productDTO);
@@ -103,6 +110,7 @@ class ProductServiceImplTest {
 
     @Test
     void updateProduct_Success() {
+        when(brandRepository.findByName("Loreal")).thenReturn(Optional.of(new Brand()));
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -116,7 +124,7 @@ class ProductServiceImplTest {
         assertEquals(25.99, updatedProduct.getLastPrice()); // Verify last price updated
         assertEquals(3, updatedProduct.getFeatures().size());
         assertEquals(1, updatedProduct.getImages().size());
-        assertEquals(updatedProduct, updatedProduct.getImages().get(0).getProduct());
+        assertEquals(updatedProduct, updatedProduct.getImages().getFirst().getProduct());
 
         verify(productRepository, times(1)).findById(1L);
         verify(productRepository, times(1)).save(any(Product.class));
@@ -124,6 +132,7 @@ class ProductServiceImplTest {
 
     @Test
     void updateProduct_Failure_NotFound() {
+        when(brandRepository.findByName("Loreal")).thenReturn(Optional.of(new Brand()));
         when(productRepository.findById(1L)).thenReturn(Optional.empty());
 
         Product updatedProduct = productService.updateProduct(productDTO);
@@ -140,7 +149,7 @@ class ProductServiceImplTest {
         List<Product> products = productService.getAllProducts();
 
         assertEquals(1, products.size());
-        assertEquals("SKU-123", products.get(0).getSku());
+        assertEquals("SKU-123", products.getFirst().getSku());
         verify(productRepository, times(1)).findAll();
     }
 
@@ -183,7 +192,7 @@ class ProductServiceImplTest {
         List<Product> products = productService.getProductsByBrand("Loreal");
 
         assertEquals(1, products.size());
-        assertEquals("Loreal", products.get(0).getBrand());
+        assertEquals("Loreal", products.getFirst().getBrand());
         verify(productRepository, times(1)).findAllByBrand("Loreal");
     }
 
@@ -194,7 +203,7 @@ class ProductServiceImplTest {
         List<Product> products = productService.getProductsByCategory("SKINCARE");
 
         assertEquals(1, products.size());
-        assertEquals(ProductCategory.SKINCARE, products.get(0).getCategory());
+        assertEquals(ProductCategory.SKINCARE, products.getFirst().getCategory());
         verify(productRepository, times(1)).findAllByCategory(ProductCategory.SKINCARE);
     }
 
@@ -205,7 +214,7 @@ class ProductServiceImplTest {
         List<Product> products = productService.getProductsByName("Hydrating Cream");
 
         assertEquals(1, products.size());
-        assertEquals("Hydrating Cream", products.get(0).getName());
+        assertEquals("Hydrating Cream", products.getFirst().getName());
         verify(productRepository, times(1)).findAllByName("Hydrating Cream");
     }
 }

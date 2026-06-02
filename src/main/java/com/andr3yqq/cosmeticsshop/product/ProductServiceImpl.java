@@ -1,5 +1,6 @@
 package com.andr3yqq.cosmeticsshop.product;
 
+import com.andr3yqq.cosmeticsshop.brand.BrandRepository;
 import com.andr3yqq.cosmeticsshop.image.Image;
 import com.andr3yqq.cosmeticsshop.image.ImageDTO;
 import jakarta.transaction.Transactional;
@@ -14,10 +15,14 @@ import java.util.List;
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
+    private final BrandRepository brandRepository;
 
     @Override
     @Transactional
     public Product createProduct(ProductDTO productDTO) {
+        if (brandRepository.findByName(productDTO.getBrand()).isEmpty()) {
+            throw new IllegalArgumentException("Brand not found with name: " + productDTO.getBrand());
+        }
         if (getProductBySku(productDTO.getSku()) == null) {
             Product product = new Product(
                     productDTO.getSku(),
@@ -50,6 +55,9 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public Product updateProduct(ProductDTO productDTO) {
+        if (brandRepository.findByName(productDTO.getBrand()).isEmpty()) {
+            throw new IllegalArgumentException("Brand not found with name: " + productDTO.getBrand());
+        }
         Product product = getProductById(productDTO.getId());
         if (product != null) {
             product.setSku(productDTO.getSku());
@@ -62,16 +70,18 @@ public class ProductServiceImpl implements ProductService {
             product.setCategory(ProductCategory.valueOf(productDTO.getCategory()));
             product.setStatus(ProductStatus.valueOf(productDTO.getStatus()));
             
+            if (product.getImages() == null) {
+                product.setImages(new ArrayList<>());
+            } else {
+                product.getImages().clear();
+            }
+
             if (productDTO.getImages() != null) {
-                List<Image> images = new ArrayList<>();
                 for (ImageDTO imageDTO : productDTO.getImages()) {
                     Image image = new Image(imageDTO.getId(), imageDTO.getImageUrl(), imageDTO.getName(), imageDTO.getType());
                     image.setProduct(product);
-                    images.add(image);
+                    product.getImages().add(image);
                 }
-                product.setImages(images);
-            } else {
-                product.setImages(null);
             }
             
             product.setFeatures(productDTO.getFeatures());

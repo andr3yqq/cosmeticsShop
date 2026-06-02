@@ -43,6 +43,8 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/brands/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/images/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/products/create").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/products/update").hasRole("ADMIN")
                         .anyRequest().authenticated())
