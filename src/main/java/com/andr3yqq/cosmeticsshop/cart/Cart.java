@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -24,6 +26,9 @@ public class Cart {
     private User user;
     private LocalDateTime updatedAt;
 
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CartItem> cartItems = new ArrayList<>();
+
     @PrePersist
     public void prePersist() {
         this.updatedAt = LocalDateTime.now();
@@ -34,3 +39,4 @@ public class Cart {
         this.updatedAt = LocalDateTime.now();
     }
 }
+
