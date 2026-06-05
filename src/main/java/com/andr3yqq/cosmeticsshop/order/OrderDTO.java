@@ -1,12 +1,12 @@
 package com.andr3yqq.cosmeticsshop.order;
 
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -14,12 +14,12 @@ import java.time.LocalDateTime;
 public class OrderDTO {
     private Long id;
     private Long userId;
-    @NotNull(message = "Order number cannot be null")
     private String orderNumber;
-    @NotNull(message = "Status cannot be null")
     private String status;
     @PositiveOrZero(message = "Total price must be greater than or equal to zero")
     private Double totalPrice;
+    private String paymentMethod;
+    private List<OrderItemDTO> orderItems;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
