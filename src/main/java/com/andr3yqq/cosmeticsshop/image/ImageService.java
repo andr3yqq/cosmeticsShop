@@ -1,11 +1,12 @@
 package com.andr3yqq.cosmeticsshop.image;
 
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface ImageService {
     Image createImage(ImageDTO imageDTO);
     Image updateImage(ImageDTO imageDTO);
     Image getImageById(Long id);
-    List<Image> getAllImages();
+    Page<Image> getAllImages(Pageable pageable);
     void deleteImage(Long id);
 }

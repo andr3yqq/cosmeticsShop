@@ -11,6 +11,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -124,41 +126,41 @@ class ProductControllerTest {
 
     @Test
     void allProducts_Success() throws Exception {
-        when(productService.getAllProducts()).thenReturn(List.of(product));
-        when(productMapper.toProductDTOList(anyList())).thenReturn(List.of(productDTO));
+        when(productService.getAllProducts(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(product)));
+        when(productMapper.toProductDTO(any(Product.class))).thenReturn(productDTO);
 
         mockMvc.perform(get("/api/products"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].sku").value("SKU-123"));
+                .andExpect(jsonPath("$.content[0].sku").value("SKU-123"));
     }
 
     @Test
     void allProductsByBrand_Success() throws Exception {
-        when(productService.getProductsByBrand("Loreal")).thenReturn(List.of(product));
-        when(productMapper.toProductDTOList(anyList())).thenReturn(List.of(productDTO));
+        when(productService.getProductsByBrand(eq("Loreal"), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(product)));
+        when(productMapper.toProductDTO(any(Product.class))).thenReturn(productDTO);
 
         mockMvc.perform(get("/api/products/brand/Loreal"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].brand").value("Loreal"));
+                .andExpect(jsonPath("$.content[0].brand").value("Loreal"));
     }
 
     @Test
     void allProductsByCategory_Success() throws Exception {
-        when(productService.getProductsByCategory("SKINCARE")).thenReturn(List.of(product));
-        when(productMapper.toProductDTOList(anyList())).thenReturn(List.of(productDTO));
+        when(productService.getProductsByCategory(eq("SKINCARE"), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(product)));
+        when(productMapper.toProductDTO(any(Product.class))).thenReturn(productDTO);
 
         mockMvc.perform(get("/api/products/category/SKINCARE"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].category").value("SKINCARE"));
+                .andExpect(jsonPath("$.content[0].category").value("SKINCARE"));
     }
 
     @Test
     void allProductsByName_Success() throws Exception {
-        when(productService.getProductsByName("Hydrating Cream")).thenReturn(List.of(product));
-        when(productMapper.toProductDTOList(anyList())).thenReturn(List.of(productDTO));
+        when(productService.getProductsByName(eq("Hydrating Cream"), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(product)));
+        when(productMapper.toProductDTO(any(Product.class))).thenReturn(productDTO);
 
         mockMvc.perform(get("/api/products/name/Hydrating Cream"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Hydrating Cream"));
+                .andExpect(jsonPath("$.content[0].name").value("Hydrating Cream"));
     }
 }

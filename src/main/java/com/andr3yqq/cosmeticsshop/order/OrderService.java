@@ -1,15 +1,15 @@
 package com.andr3yqq.cosmeticsshop.order;
 
-import com.andr3yqq.cosmeticsshop.user.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 
 public interface OrderService {
     Order createOrder(OrderDTO orderDTO);
     Order updateOrder(OrderDTO orderDTO);
     Order getOrderById(Long id);
-    List<Order> getOrdersByUserId(Long id);
+    Page<Order> getOrdersByUserId(Long id, Pageable pageable);
     Double getFullOrderPrice(OrderDTO orderDTO);
-    List<Order> getAllOrders();
+    Page<Order> getAllOrders(Pageable pageable);
 
 }

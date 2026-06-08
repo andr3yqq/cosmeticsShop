@@ -6,6 +6,8 @@ import com.andr3yqq.cosmeticsshop.user.UserService;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration;
 import org.springframework.boot.security.oauth2.server.resource.autoconfigure.servlet.OAuth2ResourceServerAutoConfiguration;
@@ -144,12 +146,12 @@ class OrderControllerTest {
 
     @Test
     void getMyOrders_Success() throws Exception {
-        when(orderService.getOrdersByUserId(1L)).thenReturn(List.of(order));
-        when(orderMapper.toOrderDTOList(anyList())).thenReturn(List.of(orderDTO));
+        when(orderService.getOrdersByUserId(eq(1L), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(order)));
+        when(orderMapper.toOrderDTO(any(Order.class))).thenReturn(orderDTO);
 
         mockMvc.perform(get("/api/orders/me"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(10L));
+                .andExpect(jsonPath("$.content[0].id").value(10L));
     }
 
     @Test
@@ -191,12 +193,12 @@ class OrderControllerTest {
     void getAllOrders_Success_Admin() throws Exception {
         mockSecurityContext(adminUser);
 
-        when(orderService.getAllOrders()).thenReturn(List.of(order));
-        when(orderMapper.toOrderDTOList(anyList())).thenReturn(List.of(orderDTO));
+        when(orderService.getAllOrders(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(order)));
+        when(orderMapper.toOrderDTO(any(Order.class))).thenReturn(orderDTO);
 
         mockMvc.perform(get("/api/orders"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(10L));
+                .andExpect(jsonPath("$.content[0].id").value(10L));
     }
 
     @Test

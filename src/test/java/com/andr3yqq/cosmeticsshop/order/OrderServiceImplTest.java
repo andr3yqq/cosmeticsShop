@@ -14,6 +14,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -242,14 +246,14 @@ class OrderServiceImplTest {
     void getOrdersByUserId_Success() {
         Order order = new Order();
         order.setId(1L);
-        List<Order> orders = List.of(order);
+        Pageable pageable = PageRequest.of(0, 10);
 
-        when(orderRepository.findByUserId(1L)).thenReturn(orders);
+        when(orderRepository.findByUserId(1L, pageable)).thenReturn(new PageImpl<>(List.of(order)));
 
-        List<Order> result = orderService.getOrdersByUserId(1L);
+        Page<Order> result = orderService.getOrdersByUserId(1L, pageable);
 
-        assertEquals(1, result.size());
-        assertEquals(1L, result.getFirst().getId());
+        assertEquals(1, result.getContent().size());
+        assertEquals(1L, result.getContent().getFirst().getId());
     }
 
     @Test

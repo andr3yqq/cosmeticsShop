@@ -6,8 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @RestController
 @RequestMapping("/api/images")
@@ -18,9 +18,10 @@ public class ImageController {
     private final ImageMapper imageMapper;
 
     @GetMapping
-    public ResponseEntity<List<ImageDTO>> getAllImages() {
-        List<Image> images = imageService.getAllImages();
-        return ResponseEntity.ok(imageMapper.toImageDTOList(images));
+    public ResponseEntity<Page<ImageDTO>> getAllImages(Pageable pageable) {
+        Page<ImageDTO> images = imageService.getAllImages(pageable)
+                .map(imageMapper::toImageDTO);
+        return ResponseEntity.ok(images);
     }
 
     @GetMapping("/{id}")

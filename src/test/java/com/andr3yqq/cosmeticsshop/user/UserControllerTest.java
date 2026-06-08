@@ -17,6 +17,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -170,11 +172,11 @@ class UserControllerTest {
         SecurityContextHolder.setContext(securityContext);
 
         try {
-            when(userService.getAllUsers()).thenReturn(List.of(user));
+            when(userService.getAllUsers(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(user)));
 
             mockMvc.perform(get("/api/users"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$[0].email").value("test@example.com"));
+                    .andExpect(jsonPath("$.content[0].email").value("test@example.com"));
         } finally {
             SecurityContextHolder.clearContext();
         }

@@ -5,6 +5,8 @@ import com.andr3yqq.cosmeticsshop.image.Image;
 import com.andr3yqq.cosmeticsshop.image.ImageDTO;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -91,8 +93,8 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
+    public Page<Product> getAllProducts(Pageable pageable) {
+        return productRepository.findAll(pageable);
     }
 
     @Override
@@ -106,18 +108,18 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<Product> getProductsByBrand(String brand) {
-        return productRepository.findAllByBrand(brand);
+    public Page<Product> getProductsByBrand(String brand, Pageable pageable) {
+        return productRepository.findAllByBrand(brand, pageable);
     }
 
     @Override
-    public List<Product> getProductsByCategory(String category) {
+    public Page<Product> getProductsByCategory(String category, Pageable pageable) {
         ProductCategory productCategory = ProductCategory.valueOf(category);
-        return productRepository.findAllByCategory(productCategory);
+        return productRepository.findAllByCategory(productCategory, pageable);
     }
 
     @Override
-    public List<Product> getProductsByName(String name) {
-        return productRepository.findAllByName(name);
+    public Page<Product> getProductsByName(String name, Pageable pageable) {
+        return productRepository.findAllByName(name, pageable);
     }
 }

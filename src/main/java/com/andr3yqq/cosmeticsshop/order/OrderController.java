@@ -11,8 +11,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -48,7 +48,7 @@ public class OrderController {
 
     @GetMapping("/me")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<List<OrderDTO>> getMyOrders() {
+    public ResponseEntity<Page<OrderDTO>> getMyOrders(Pageable pageable) {
         User user = getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -59,8 +59,9 @@ public class OrderController {
         }
 
         try {
-            List<Order> orders = orderService.getOrdersByUserId(user.getId());
-            return ResponseEntity.ok(orderMapper.toOrderDTOList(orders));
+            Page<OrderDTO> orders = orderService.getOrdersByUserId(user.getId(), pageable)
+                    .map(orderMapper::toOrderDTO);
+            return ResponseEntity.ok(orders);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -98,7 +99,7 @@ public class OrderController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<OrderDTO>> getAllOrders() {
+    public ResponseEntity<Page<OrderDTO>> getAllOrders(Pageable pageable) {
         User user = getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -109,8 +110,9 @@ public class OrderController {
         }
 
         try {
-            List<Order> orders = orderService.getAllOrders();
-            return ResponseEntity.ok(orderMapper.toOrderDTOList(orders));
+            Page<OrderDTO> orders = orderService.getAllOrders(pageable)
+                    .map(orderMapper::toOrderDTO);
+            return ResponseEntity.ok(orders);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

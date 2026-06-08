@@ -1,16 +1,15 @@
 package com.andr3yqq.cosmeticsshop.product;
 
-import com.andr3yqq.cosmeticsshop.brand.BrandDTO;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface ProductService {
     Product createProduct(ProductDTO productDTO);
     Product updateProduct(ProductDTO productDTO);
-    List<Product> getAllProducts();
+    Page<Product> getAllProducts(Pageable pageable);
     Product getProductById(Long id);
     Product getProductBySku(String sku);
-    List<Product> getProductsByBrand(String brand);
-    List<Product> getProductsByCategory(String category);
-    List<Product> getProductsByName(String name);
+    Page<Product> getProductsByBrand(String brand, Pageable pageable);
+    Page<Product> getProductsByCategory(String category, Pageable pageable);
+    Page<Product> getProductsByName(String name, Pageable pageable);
 }

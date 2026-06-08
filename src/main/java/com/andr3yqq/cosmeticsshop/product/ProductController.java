@@ -5,7 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.security.access.prepost.PreAuthorize;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @RestController
 @RequestMapping("/api/products")
@@ -34,26 +35,30 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ProductDTO>> allProducts() {
-        List<ProductDTO> products = productMapper.toProductDTOList(productService.getAllProducts());
+    public ResponseEntity<Page<ProductDTO>> allProducts(Pageable pageable) {
+        Page<ProductDTO> products = productService.getAllProducts(pageable)
+                .map(productMapper::toProductDTO);
         return ResponseEntity.ok().body(products);
     }
 
     @GetMapping("/brand/{brand}")
-    public ResponseEntity<List<ProductDTO>> allProductsByBrand(@PathVariable String brand) {
-        List<ProductDTO> products = productMapper.toProductDTOList(productService.getProductsByBrand(brand));
+    public ResponseEntity<Page<ProductDTO>> allProductsByBrand(@PathVariable String brand, Pageable pageable) {
+        Page<ProductDTO> products = productService.getProductsByBrand(brand, pageable)
+                .map(productMapper::toProductDTO);
         return ResponseEntity.ok().body(products);
     }
 
     @GetMapping("/category/{category}")
-    public ResponseEntity<List<ProductDTO>> allProductsByCategory(@PathVariable String category) {
-        List<ProductDTO> products = productMapper.toProductDTOList(productService.getProductsByCategory(category));
+    public ResponseEntity<Page<ProductDTO>> allProductsByCategory(@PathVariable String category, Pageable pageable) {
+        Page<ProductDTO> products = productService.getProductsByCategory(category, pageable)
+                .map(productMapper::toProductDTO);
         return ResponseEntity.ok().body(products);
     }
 
     @GetMapping("/name/{name}")
-    public ResponseEntity<List<ProductDTO>> allProductsByName(@PathVariable String name) {
-        List<ProductDTO> products = productMapper.toProductDTOList(productService.getProductsByName(name));
+    public ResponseEntity<Page<ProductDTO>> allProductsByName(@PathVariable String name, Pageable pageable) {
+        Page<ProductDTO> products = productService.getProductsByName(name, pageable)
+                .map(productMapper::toProductDTO);
         return ResponseEntity.ok().body(products);
     }
 }

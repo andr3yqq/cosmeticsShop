@@ -1,15 +1,15 @@
 package com.andr3yqq.cosmeticsshop.product;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-
-import java.util.List;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
     Product findBySku(String sku);
 
-    List<Product> findAllByBrand(String brand);
+    Page<Product> findAllByBrand(String brand, Pageable pageable);
 
-    List<Product> findAllByCategory(ProductCategory category);
+    Page<Product> findAllByCategory(ProductCategory category, Pageable pageable);
 
-    List<Product> findAllByName(String name);
+    Page<Product> findAllByName(String name, Pageable pageable);
 }

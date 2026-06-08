@@ -7,6 +7,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
 
@@ -96,12 +100,13 @@ class ImageServiceImplTest {
 
     @Test
     void getAllImages_Success() {
-        when(imageRepository.findAll()).thenReturn(List.of(image));
+        Pageable pageable = PageRequest.of(0, 10);
+        when(imageRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(image)));
 
-        List<Image> result = imageService.getAllImages();
+        Page<Image> result = imageService.getAllImages(pageable);
 
-        assertEquals(1, result.size());
-        assertEquals("product-image", result.getFirst().getName());
+        assertEquals(1, result.getContent().size());
+        assertEquals("product-image", result.getContent().getFirst().getName());
     }
 
     @Test

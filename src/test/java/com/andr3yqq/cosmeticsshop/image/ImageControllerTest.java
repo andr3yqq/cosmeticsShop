@@ -5,6 +5,8 @@ import com.andr3yqq.cosmeticsshop.user.UserService;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -55,8 +57,8 @@ class ImageControllerTest {
 
     @Test
     void getAllImages_Success() throws Exception {
-        when(imageService.getAllImages()).thenReturn(List.of(image));
-        when(imageMapper.toImageDTOList(any())).thenReturn(List.of(imageDTO));
+        when(imageService.getAllImages(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(image)));
+        when(imageMapper.toImageDTO(any(Image.class))).thenReturn(imageDTO);
 
         mockMvc.perform(get("/api/images")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"))))

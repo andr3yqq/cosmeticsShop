@@ -9,6 +9,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.quality.Strictness;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
@@ -260,12 +264,13 @@ class UserServiceImplTest {
 
     @Test
     void getAllUsers_Success() {
-        when(userRepository.findAll()).thenReturn(List.of(user));
+        Pageable pageable = PageRequest.of(0, 10);
+        when(userRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(user)));
 
-        List<User> users = userService.getAllUsers();
+        Page<User> users = userService.getAllUsers(pageable);
 
-        assertEquals(1, users.size());
-        assertEquals("test@example.com", users.getFirst().getEmail());
+        assertEquals(1, users.getContent().size());
+        assertEquals("test@example.com", users.getContent().getFirst().getEmail());
     }
 
 

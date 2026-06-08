@@ -7,9 +7,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-
-import java.util.List;
-import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @RestController
 @RequestMapping("/api/users")
@@ -112,15 +111,13 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
+    public ResponseEntity<Page<UserResponseDTO>> getAllUsers(Pageable pageable) {
         try {
             if (!isAdmin()) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
-            List<User> users = userService.getAllUsers();
-            List<UserResponseDTO> responseDTOs = users.stream()
-                    .map(user -> mapToResponseDTO(user, "User retrieved"))
-                    .collect(Collectors.toList());
+            Page<UserResponseDTO> responseDTOs = userService.getAllUsers(pageable)
+                    .map(user -> mapToResponseDTO(user, "User retrieved"));
             return ResponseEntity.ok(responseDTOs);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

@@ -16,6 +16,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import com.andr3yqq.cosmeticsshop.config.SecurityConfig;
 
 import java.util.List;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -126,8 +128,8 @@ class ProductControllerSecurityTest {
 
     @Test
     void getProducts_PublicAccess_Success() throws Exception {
-        when(productService.getAllProducts()).thenReturn(List.of(product));
-        when(productMapper.toProductDTOList(any())).thenReturn(List.of(productDTO));
+        when(productService.getAllProducts(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(product)));
+        when(productMapper.toProductDTO(any(Product.class))).thenReturn(productDTO);
 
         mockMvc.perform(get("/api/products"))
                 .andExpect(status().isOk());

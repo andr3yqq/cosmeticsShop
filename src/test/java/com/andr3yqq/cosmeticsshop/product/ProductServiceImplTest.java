@@ -10,6 +10,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -144,13 +148,14 @@ class ProductServiceImplTest {
 
     @Test
     void getAllProducts_Success() {
-        when(productRepository.findAll()).thenReturn(List.of(product));
+        Pageable pageable = PageRequest.of(0, 10);
+        when(productRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(product)));
 
-        List<Product> products = productService.getAllProducts();
+        Page<Product> products = productService.getAllProducts(pageable);
 
-        assertEquals(1, products.size());
-        assertEquals("SKU-123", products.getFirst().getSku());
-        verify(productRepository, times(1)).findAll();
+        assertEquals(1, products.getContent().size());
+        assertEquals("SKU-123", products.getContent().getFirst().getSku());
+        verify(productRepository, times(1)).findAll(pageable);
     }
 
     @Test
@@ -187,34 +192,37 @@ class ProductServiceImplTest {
 
     @Test
     void getProductsByBrand_Success() {
-        when(productRepository.findAllByBrand("Loreal")).thenReturn(List.of(product));
+        Pageable pageable = PageRequest.of(0, 10);
+        when(productRepository.findAllByBrand("Loreal", pageable)).thenReturn(new PageImpl<>(List.of(product)));
 
-        List<Product> products = productService.getProductsByBrand("Loreal");
+        Page<Product> products = productService.getProductsByBrand("Loreal", pageable);
 
-        assertEquals(1, products.size());
-        assertEquals("Loreal", products.getFirst().getBrand());
-        verify(productRepository, times(1)).findAllByBrand("Loreal");
+        assertEquals(1, products.getContent().size());
+        assertEquals("Loreal", products.getContent().getFirst().getBrand());
+        verify(productRepository, times(1)).findAllByBrand("Loreal", pageable);
     }
 
     @Test
     void getProductsByCategory_Success() {
-        when(productRepository.findAllByCategory(ProductCategory.SKINCARE)).thenReturn(List.of(product));
+        Pageable pageable = PageRequest.of(0, 10);
+        when(productRepository.findAllByCategory(ProductCategory.SKINCARE, pageable)).thenReturn(new PageImpl<>(List.of(product)));
 
-        List<Product> products = productService.getProductsByCategory("SKINCARE");
+        Page<Product> products = productService.getProductsByCategory("SKINCARE", pageable);
 
-        assertEquals(1, products.size());
-        assertEquals(ProductCategory.SKINCARE, products.getFirst().getCategory());
-        verify(productRepository, times(1)).findAllByCategory(ProductCategory.SKINCARE);
+        assertEquals(1, products.getContent().size());
+        assertEquals(ProductCategory.SKINCARE, products.getContent().getFirst().getCategory());
+        verify(productRepository, times(1)).findAllByCategory(ProductCategory.SKINCARE, pageable);
     }
 
     @Test
     void getProductsByName_Success() {
-        when(productRepository.findAllByName("Hydrating Cream")).thenReturn(List.of(product));
+        Pageable pageable = PageRequest.of(0, 10);
+        when(productRepository.findAllByName("Hydrating Cream", pageable)).thenReturn(new PageImpl<>(List.of(product)));
 
-        List<Product> products = productService.getProductsByName("Hydrating Cream");
+        Page<Product> products = productService.getProductsByName("Hydrating Cream", pageable);
 
-        assertEquals(1, products.size());
-        assertEquals("Hydrating Cream", products.getFirst().getName());
-        verify(productRepository, times(1)).findAllByName("Hydrating Cream");
+        assertEquals(1, products.getContent().size());
+        assertEquals("Hydrating Cream", products.getContent().getFirst().getName());
+        verify(productRepository, times(1)).findAllByName("Hydrating Cream", pageable);
     }
 }

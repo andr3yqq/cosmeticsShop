@@ -10,6 +10,8 @@ import com.andr3yqq.cosmeticsshop.user.User;
 import com.andr3yqq.cosmeticsshop.user.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -167,11 +169,11 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<Order> getOrdersByUserId(Long userId) {
+    public Page<Order> getOrdersByUserId(Long userId, Pageable pageable) {
         if (userId == null) {
             throw new IllegalArgumentException("User ID must not be null.");
         }
-        return orderRepository.findByUserId(userId);
+        return orderRepository.findByUserId(userId, pageable);
     }
 
     @Override
@@ -198,7 +200,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<Order> getAllOrders() {
-        return orderRepository.findAll();
+    public Page<Order> getAllOrders(Pageable pageable) {
+        return orderRepository.findAll(pageable);
     }
 }
